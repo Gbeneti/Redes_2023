@@ -18,6 +18,10 @@ Esta pasta contém os experimentos de algoritmos genéticos realizados em sala.
 
 + O arquivo "experimento A.05 - descobrindo a senha" é um jupyter notebook que possui o código relativo a um experimento de minimização por meio de algoritmos genéticos em relação ao problema de descobrir senhas. Esse experimento ainda não está completo e por isso suas funções específicas ainda não estão em "funcoes.py". Assim, ainda está em desenvolvimento e teste.
 
++ O arquivo "Lista de experimentos - algoritmos geneticos" são 16 experimentos a serem feitos pelos alunos que envolvem algoritmos genéticos.
+
++ O arquivo "experimento GA.05 - palindromos" é um jupyter notebook que possui o código relativo a um experimento envolvendo palíndromos. É um dos experimentos do arquivo "Lista de experimentos - algoritmos geneticos", em que se quer encontrar 10 palíndromos a partir de 5 letras (com uma vogal), utilizando-se de algoritmos genéticos.
+
 
 Para maiores detalhes consultar os notebooks.
 
