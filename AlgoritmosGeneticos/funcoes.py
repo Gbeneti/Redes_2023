@@ -47,39 +47,6 @@ def cria_cidades(n):
 
     return cidades
 
-def top_min(populacao, fitness, numero):
-    '''Organiza um dicionário como um "top" de menor para maiores valores (de fitness) e dá output como os (numero) menores. 
-
-    Nota: funciona para algoritmos de minimização
-
-    Args:
-      populacao: população do problema
-      fitness: lista de fitness
-      numero: tamanho do "top"
-      
-    Returns:
-     Lista com (numero) individuos de menor fitness
-
-'''
-    #print(fitness)
-    #print(populacao)
-    dictionary_no_duplicates = {}
-    for k in range(0,len(populacao)):
-        populacao[k] = ''.join(populacao[k])
-    
-    dictionary = {populacao[i]:fitness[i] for i in range(len(populacao))}
-    
-    #return dictionary
-    
-    sort_dict = sorted(dictionary.items(), key=lambda x:x[1])
-    dictionary_sorted = dict(sort_dict)
-    print(dictionary_sorted)
-
-    top = list(dictionary_sorted.items())[:5]
-    #print(dictionary_sorted.values())
-
-    return (f'top {numero}: {top}'), list(dictionary_sorted.values())[:5]
-
 
 ###############################################################################
 #                                    Genes                                    #
@@ -123,7 +90,7 @@ def gene_letra(letras):
     letra = random.choice(letras)
     return letra
 
-def gene_palindromo(letras):
+def gene_palindromo(letras): #pode ser subsituido por gene_letra
     '''Gera um gene válido para o problema dos palindromos.
     
     Return:
@@ -190,6 +157,24 @@ def individuo_senha(tamanho_senha, letras):
 
     return candidato
 
+def individuo_palindromo(tamanho_palindromo, letras): #pode ser substiuído pelo da senha
+    '''Gera um candidato para o problema dos palindromos.
+    
+    Args:
+        tamanho_palindromo: valor que relresenta o numero de genes do palindromo
+        letras: letras que podem ser genes
+    
+    Return:
+        Uma lista de genes, de modo que os caracteres aceitos estão na lista "letras" 
+    '''
+
+    candidato = [] #lista com o candidato
+
+    for n in range(tamanho_palindromo):
+        candidato.append(gene_palindromo(letras)) #cria um individuo com um len == n
+    return candidato
+
+
 
 # NOVIDADE
 def individuo_cv(cidades):
@@ -207,26 +192,6 @@ def individuo_cv(cidades):
     nomes = list(cidades.keys())
     random.shuffle(nomes)
     return nomes
-
-def individuo_palindromo(tamanho_palindromo, letras):
-    '''Gera um candidato para o problema dos palindromos.
-    
-    Args:
-        tamanho_palindromo: valor que relresenta o numero de genes do palindromo
-        letras: letras que podem ser genes
-    
-    Return:
-        Uma lista de genes, de modo que os caracteres aceitos estão na lista "letras" 
-    '''
-
-    candidato = [] #lista com o candidato
-
-    for n in range(tamanho_palindromo):
-        candidato.append(gene_palindromo(letras)) #cria um individuo com um len == n
-    #candidado = [(''.join(candidato))]
-    #print(candidato)
-
-    return candidato
 
 
 ###############################################################################
@@ -306,12 +271,12 @@ def populacao_inicial_cv(tamanho, cidades):
         populacao.append(individuo_cv(cidades))
     return populacao
 
-def populacao_inicial_palindromo(tamanho, tamanho_palindromo, letras):
+def populacao_inicial_palindromo(tamanho, tamanho_palindromo, letras): 
     """Cria população inicial no problema do palindromo
 
     Args
       tamanho: tamanho da população.
-      tamanho_palindromo: inteiro representando o tamanho do palindromo.
+      tamanho_palindromo: inteiro representando o tamanho do individuo.
       letras: letras possíveis de serem sorteadas.
 
     Returns:
@@ -319,8 +284,9 @@ def populacao_inicial_palindromo(tamanho, tamanho_palindromo, letras):
     """
     populacao = []
     for n in range(tamanho):
-        populacao.append(individuo_palindromo(tamanho_palindromo, letras)) #cria uma lista de listas como populacao (senhas)
+        populacao.append(individuo_palindromo(tamanho_palindromo, letras)) #cria uma lista de listas como populacao
     return populacao
+
 
 
 ###############################################################################
@@ -521,7 +487,7 @@ def mutacao_de_troca(individuo):
     
     return individuo
 
-def mutacao_palindromo(individuo, letras): 
+def mutacao_espelhada_palindromo(individuo, letras): 
     """Realiza a mutação de genes espelhados no problema do palindromo.
 
     Args:
@@ -529,12 +495,11 @@ def mutacao_palindromo(individuo, letras):
       letras: letras possíveis de serem sorteadas.
 
     Return:
-      Um individuo (palindromo) com dois genes iguais (mutado).
+      Um individuo (palindromo) com dois genes iguais em index simetrico (mutado).
     """
     individuo = individuo
     metade_quantidade_genes = (len(individuo) - 1) / 2
     gene = random.randint(0, metade_quantidade_genes)
-    #print(gene)
     
     if gene == metade_quantidade_genes:
         individuo[gene] = gene_palindromo(letras)
@@ -644,14 +609,9 @@ def funcao_objetivo_palindromo(individuo,vogais):
     Nota: todo palindromo necessariamente precisa apresentar uma vogal.
     """
     fitness = 0
-    #print(individuo)
-    #individuo = ''.join(individuo)
     individuo_reverso = individuo[::-1]
-    #print(individuo_reverso)
-    #print(individuo_reverso)
             
     for normal,inversa in zip(individuo,individuo_reverso):
-        #print(normal,inversa)
         if normal != inversa:
             fitness += 500 #adição de fitness para aqueles que não apresentam letras iguais a inversa
     
@@ -757,10 +717,7 @@ def funcao_objetivo_pop_palindromo(populacao,vogais):
     #print(populacao)
     fitness_pop = []
     for individuo in populacao:
-        #print(populacao)
-        #print(individuo)
-        #individuo = ''.join(individuo)
-        fitness_ind = funcao_objetivo_palindromo(individuo, vogais)
+        fitness_individuo = funcao_objetivo_palindromo(individuo, vogais)
         
-        fitness_pop.append(fitness_ind)
+        fitness_pop.append(fitness_individuo)
     return fitness_pop
