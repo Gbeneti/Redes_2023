@@ -283,7 +283,7 @@ def populacao_inicial_palindromo(tamanho, tamanho_palindromo, letras):
       Lista com todos os indivíduos da população no problema da senha.
     """
     populacao = []
-    for n in range(tamanho):
+    for _ in range(tamanho):
         populacao.append(individuo_palindromo(tamanho_palindromo, letras)) #cria uma lista de listas como populacao
     return populacao
 
