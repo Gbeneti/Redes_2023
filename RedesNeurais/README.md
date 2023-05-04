@@ -1,10 +1,5 @@
 # Experimentos de redes neurais artificiais
 
-+ O arquivo "funcoes.py" ainda não está em uso.
+Coloque seus experimentos de redes neurais nesta pasta.
 
-+ O arquivo "classes.py" ainda não está em uso.
-
-+ O arquivo "constantes.py" ainda não está em uso.
-
-
-Por enqunato, nenhum experimento com redes neurais foi realizado.
+Esceva um README aqui para guiar o leitor sobre seus experimentos realizados.

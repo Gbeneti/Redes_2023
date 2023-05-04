@@ -9,7 +9,7 @@ Este README  tem o objetivo de guiar possíveis leitores em relação à organiz
 
 Na pasta "AlgoritmosGeneticos" estão todas as subpastas, os códigos e os arquivos relativos aos experimentos realizados em sala de aula sobre algoritmos genéticos e otimização.
 
-Na pasta "RedesNeurais" estão alguns arquivos de padronização. Por enquanto não há nenhum experimento/projeto realizado em relação a redes neurais.
+Na pasta "RedesNeurais" estão alguns arquivos de padronização. Por enquanto houve apenas uma introdução teórica em relação a redes neurais.
 
 O arquivo "Algumas coisas que valem a pena aprender ou relembrar" é um jupyter notebook com conceitos extremamente úteis para o desenvolvimento dos algoritmos.
 
