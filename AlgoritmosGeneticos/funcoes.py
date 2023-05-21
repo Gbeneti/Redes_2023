@@ -1,11 +1,14 @@
 import random
+from operator import itemgetter
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error
 
 ###############################################################################
 #                                   Suporte                                   #
 ##############################################################################+
 
 
-# NOVIDADE
 def distancia_entre_dois_pontos(a, b):
     """Computa a distância Euclidiana entre dois pontos em R^2
 
@@ -51,7 +54,6 @@ def cria_cidades(n):
     return cidades
 
 
-# NOVIDADE
 def computa_mochila(individuo, objetos, ordem_dos_nomes):
     """Computa o valor total e peso total de uma mochila
 
@@ -84,6 +86,55 @@ def computa_mochila(individuo, objetos, ordem_dos_nomes):
             valor_total += valor_do_item
             peso_total += peso_do_item
     return valor_total, peso_total
+
+
+def hiperparametros_modelo(hiper_range_1,hiper_range_2):
+    '''Função que armazena os hiperparâmetros.
+        Nota: a adição ou remoção de hiperparâmetros pode implicar na alteração uma ou mais partes do código.
+        Nota 2: nos ranges estão aplicadas uma correção de +1 por causa do python.
+    
+    Args:
+        hiper_range_1: como está implementado, corresponde ao range máximo para "max_depth"
+        hiper_range_2: como está implementado, corresponde ao range máximo para "min_samples_split"
+        
+    Returns:
+        dicionário contendo os hiperparâmetros
+    '''
+
+    hiperparametros = {
+    'max_depth':([max_depth for max_depth in range(1,hiper_range_1+1)]), #max_depth
+    'criterion':('squared_error', 'friedman_mse', 'absolute_error', 'poisson'), #criterion
+    'min_samples_split':([min_samples_split for min_samples_split in range(2,hiper_range_2+1)]), #min_samples_split
+    }
+    
+    return hiperparametros
+
+    
+def funcao_objetivo_standard(X_treino,X_teste,y_treino,y_teste,semente_aleatoria):
+    """Calcula o valor padrão de MSE para um dado dataset. Utiliza dos valores padrões do scikit.
+    
+    Args:
+        X_treino: dataset de treino (features)
+        X_teste: dataset de teste (target)
+        y_treino: dataset de treino (features)
+        y_teste: dataset de teste (target)
+        semente_aleatoria: semente aleatória escolhida para a situação
+    
+    Returns:
+        Valor padrão de MSE do scikit-learn para um dado dataset
+    """
+    #criação do modelo
+    modelo_dt = DecisionTreeRegressor(random_state=semente_aleatoria)
+
+    # treina o modelo
+    modelo_dt.fit(X_treino, y_treino)
+    
+    y_verdadeiro = y_teste
+    y_previsao = modelo_dt.predict(X_teste)
+
+    MSE_standard = mean_squared_error(y_verdadeiro, y_previsao, squared=True) #calcular MSE sem alterar nenhum parâmetro
+    
+    return MSE_standard
 
 
 ###############################################################################
@@ -222,6 +273,27 @@ def individuo_palindromo(
         candidato.append(gene_letra(letras))  # cria um individuo com 'n' genes
     return candidato
 
+def individuo_hiperparametros(hiper_range_1,hiper_range_2):
+    '''Gera um indivíduo aleatório com base no dicionário de hiperparâmetros.
+    
+    Args:
+        hiper_range_1: como está implementado, corresponde ao range máximo para "max_depth".
+        hiper_range_2: como está implementado, corresponde ao range máximo para "min_samples_split".
+        
+            
+    Returns:
+        Um individuo ordenado aleatório.
+        '''
+    
+    individuo = []
+    hiperparametros = hiperparametros_modelo(hiper_range_1,hiper_range_2) #hiperparametros definidos
+    for i in (range(0,len(hiperparametros))):
+        gene = random.sample(list(hiperparametros.values())[i], k=1) #pega um gene aleatório do dicionário de  hiperparâmetros, retorna o valor em uma lista
+        individuo.append(gene[0]) #retira da lista gerada por random.sample() e coloca na lista 'individuo'
+        
+    return individuo
+        
+
 
 ###############################################################################
 #                                  População                                  #
@@ -323,6 +395,25 @@ def populacao_inicial_palindromo(tamanho, tamanho_palindromo, letras):
     return populacao
 
 
+def populacao_inicial_hiperparametros(tamanho, hiper_range_1,hiper_range_2):
+    '''Gera uma população aleatória com base nos ranges.
+    
+    Args:
+        hiper_range_1: como está implementado, corresponde ao range máximo para "max_depth".
+        hiper_range_2: como está implementado, corresponde ao range máximo para "min_samples_split".
+        
+            
+    Returns:
+        Uma população aleatória com individuos ordenados.
+        '''
+
+    populacao = []
+    while len(populacao) != tamanho:
+        for _ in range(tamanho):
+            populacao.append(individuo_hiperparametros(hiper_range_1,hiper_range_2)) #cria uma lista de listas como populacao
+    return populacao
+
+
 ###############################################################################
 #                                   Seleção                                   #
 ###############################################################################
@@ -393,6 +484,54 @@ def selecao_torneio_min(populacao, fitness, tamanho_torneio=3):
     return selecionados
 
 
+def selecao_torneio_min_hiperparametros(populacao, fitness, tamanho_torneio=3): #implementada em funcoes.py
+    """Faz a seleção de uma população usando torneio adaptada para o problema de hp tuning.
+
+    Nota: da forma que está implementada, só funciona em problemas de
+    minimização.
+    Nota_2: está adaptada à hp tuning, logo há algumas modificações específicas, como o código para dar "sort" nos individuos com base no MSE.
+
+    Args:
+      populacao: população do problema
+      fitness: lista com os valores de fitness dos individuos da população
+      tamanho_torneio: quantidade de invidiuos que batalham entre si
+
+    Returns:
+      Individuos selecionados e uma lista separada com as fitness dos individuos selecionados. Ambas organizadas de menor para maior fitness.
+    """
+    selecionados = []
+    fitness_selecionados = []
+    minimo_fitness_list = []
+
+    # criamos essa variável para associar cada individuo com seu valor de fitness
+    par_populacao_fitness = list(zip(populacao, fitness))
+
+    # vamos fazer len(populacao) torneios! Que comecem os jogos!
+    for _ in range(len(populacao)):
+        combatentes = random.sample(par_populacao_fitness, tamanho_torneio)
+
+        # é assim que se escreve infinito em python
+        minimo_fitness = float("inf")
+
+        for par_individuo_fitness in combatentes:
+            individuo = par_individuo_fitness[0]
+            fit = par_individuo_fitness[1]
+
+            # queremos o individuo de menor fitness
+            if fit < minimo_fitness:
+                selecionado = individuo
+                minimo_fitness = fit
+                selecionados.append(selecionado)
+                minimo_fitness_list.append(minimo_fitness)
+               
+
+    par_selecionados_fitness = list(zip(selecionados, minimo_fitness_list)) #lista de listas que relaciona o individuo com seu fitness
+    par_selecionados_fitness_sorted = sorted(par_populacao_fitness, key=itemgetter(-1)) #organiza a lista com base no valor do MSE de cada individuo
+    selecionados, fitness_selecionados = zip(*par_selecionados_fitness_sorted) #desacopla a lista de listas em duas listas
+
+    return list(selecionados), list(fitness_selecionados)
+
+
 ###############################################################################
 #                                  Cruzamento                                 #
 ###############################################################################
@@ -457,6 +596,36 @@ def cruzamento_ordenado(pai, mae):
             filho2.append(gene)
     return filho1, filho2
 
+
+def reproducao_shuffle_ordenado_hiperparametros(pai, mae, pae,numero_de_proles=3):
+    '''Função que gera um indivíduo ordenado por da combinação aleatória de outros três - pai, mae e pae.
+    
+    Args:
+        pai: lista que representa o pai
+        mae: lista que represnta a mae
+        pae: lista que representa o(a) pae
+        numero_de_proles: quantidade de individuos que será gerado
+        
+    Retruns:
+        Novos individuos, produto da combinacao.
+    '''
+    
+    
+    proles = []
+    genes = []
+    
+    progenitores = [pai, mae, pae] #lista com pai, mae e pae
+    lista_index = list(range(0,len(pai))) #indexes devem ser fixos para que a ordem não varie
+    
+    for _ in range(0,numero_de_proles):
+        random.shuffle(progenitores) #lista com ordem aleatória de progenitores. Assim, 
+        for index, parente in zip(lista_index, progenitores):
+            genes.append(parente[index]) #recebe um gene aleatório de cada progenitor
+            if len(genes) == len(pai):
+                proles.append(genes) #cria um individuo
+                genes = []
+        
+    return proles
 
 ###############################################################################
 #                                   Mutação                                   #
@@ -574,6 +743,53 @@ def mutacao_espelhada_palindromo(individuo, letras):
     ]  # substitui no index simetrico ao aleatoriamente selecionado
     return individuo
 
+def mutacao_hiperparametros(individuo,hiper_range_1,hiper_range_2):
+    '''Função que substitui um dos genes do individuo por um gene aleatório do dicionário de hiperparâmetros.
+    
+    Args:
+        individuo: lista que representa um individuo a ser mutado.
+        hiper_range_1: como está implementado, corresponde ao range máximo para "max_depth".
+        hiper_range_2: como está implementado, corresponde ao range máximo para "min_samples_split".
+        
+    Retruns:
+        lista que representa um individuo mutado.
+        
+    '''
+    hiperparametros_possiveis = hiperparametros_modelo(hiper_range_1,hiper_range_2) #dicionario de hiperparâmetros
+    mutate_random_hp = random.choice(range(0,len(hiperparametros_possiveis))) #escolhe um tipo hiperparâmetro a ser mutado
+    mutate_random_hp_parameter = random.choice((list(hiperparametros_possiveis.values())[mutate_random_hp])) #escolhe o valor do hiperparâmetro
+    
+    individuo[mutate_random_hp] = mutate_random_hp_parameter #aplica a mutação no individuo, respeitando a ordem
+    
+    return individuo
+
+
+def mutacao_tendencia_as_cegas(individuo, populacao, corte=3):
+    '''Função de mutação que muta um ou mais genes aleatórios do indivíduo, baseado em um ou mais genes aleatórios de um dos três melhores indivíduos.
+       O objetivo é tentar criar um "tendência" a um mínimo local de MSE, com base nos genes dos melhores individuos.
+    
+    Args: 
+        individuo: individuo a ser mutado
+        populacao: poplacao de individuos sorted (baseado no valor de MSE).
+        corte: quantidade de "melhores individuos" a se usar como base para a mutação.
+        
+    Returns:
+        individuo mutado (com um dos genes dos três melhores).
+    '''
+    
+    range_index_individuo = range(0,len(individuo))
+    melhores_individuos = populacao[:corte] #pegar os melhores individuos baseado no sort pelo fitness
+    individuo_melhor = (random.choice(melhores_individuos)) #escolher um melhor individuo baseado no corte
+    numero_mutacoes = random.randint(1, len(individuo)) #escolher o número de mutações que irá ocorrer
+    mutate_random_index = random.sample(range_index_individuo, numero_mutacoes) #escolher o index dessas mutações
+    
+    if individuo_melhor == individuo: #se pegou si mesmo, não faz sentido mutar
+        return individuo
+    else:
+        for gene_index in mutate_random_index:
+            individuo[gene_index] = individuo_melhor[gene_index] #substitui os index do individuo pelo individuo_melhor
+        
+    return individuo #individuo mutado
 
 ###############################################################################
 #                         Função objetivo - indivíduos                        #
@@ -699,6 +915,7 @@ def funcao_objetivo_mochila(individuo, objetos, limite, ordem_dos_nomes):
 
 def funcao_objetivo_palindromo(individuo, vogais):
     """Computa a função objetivo no problema dos palindromos.
+    
     Args:
         individuo: lista contendo caracteres.
         vogais: lista contendo vogais
@@ -726,6 +943,49 @@ def funcao_objetivo_palindromo(individuo, vogais):
         else:
             fitness += 500  # caso não apresentar, punição
             return fitness
+    return fitness
+
+def funcao_objetivo_hiperparametros(X_treino,X_teste,y_treino,y_teste,semente_aleatoria,individuo,MSE_standard,punishment=1e6):
+    """ Calcula o MSE para um individuo. O MSE é base para o fitness.
+    
+    Args:
+        X_treino: dataset de treino (features)
+        X_teste: dataset de teste (target)
+        y_treino: dataset de treino (features)
+        y_teste: dataset de teste (target)
+        semente_aleatoria: semente aleatória escolhida para a situação
+        individuo: lista que representa um individuo
+        MSE_standard: MSE calculado com os valores padrões do scikit-learn
+        punishment: valor correspondente a punição aplicada aos indivíduos que tem MSE maior que o 'standard'
+        
+    Returns: valor correspondente ao fitness do individuo
+    """
+    
+    
+    [num_profundidade, qualidade_criterio, split_folhas] = individuo #extrai os genes do individuo em variáveis separadas
+    
+    modelo_dt = DecisionTreeRegressor(
+        criterion=qualidade_criterio,
+        max_depth=num_profundidade,
+        min_samples_split=split_folhas,
+        random_state=semente_aleatoria,
+    ) #criação do modelo, aplicação dos genes como hiperparâmetros
+
+    # treina o modelo
+    modelo_dt.fit(X_treino, y_treino)
+    
+    y_verdadeiro = y_teste
+    y_previsao = modelo_dt.predict(X_teste)
+
+    MSE = mean_squared_error(y_verdadeiro, y_previsao, squared=True) #calcula o MSE
+    
+    fitness = 0
+    
+    if MSE > MSE_standard:
+        fitness = MSE + punishment #aplica punição aos individuos com MSE maior que o 'standard'
+    else:
+        fitness = MSE #não aplica punição aos indivíduos com mse menor do que o 'standard'
+    
     return fitness
 
 
@@ -808,7 +1068,6 @@ def funcao_objetivo_pop_cv(populacao, cidades):
     return resultado
 
 
-# NOVIDADE
 def funcao_objetivo_pop_mochila(populacao, objetos, limite, ordem_dos_nomes):
     """Computa a fun. objetivo de uma populacao no problema da mochila
 
@@ -854,4 +1113,27 @@ def funcao_objetivo_pop_palindromo(populacao, vogais):
         )  # gera o fitness do individuo
 
         fitness_pop.append(fitness_individuo)  # armazena o fitness do individuo
+    return fitness_pop
+
+
+def funcao_objetivo_pop_hiperparametros(X_treino,X_teste,y_treino,y_teste,semente_aleatoria,populacao,MSE_standard):
+    '''Cria uma lista com o fitness da população calculados.
+    
+    Args:
+        X_treino: dataset de treino (features)
+        X_teste: dataset de teste (target)
+        y_treino: dataset de treino (features)
+        y_teste: dataset de teste (target)
+        semente_aleatoria: semente aleatória escolhida para a situação
+        populacao: lista de individuos
+        MSE_standard: valor de MSE calculado sem alterar os hiperparâmetros do scikit-learn
+    Returns:
+        lista com o fitness da populacao
+    '''
+
+    fitness_pop = []
+    for individuo in populacao:
+        populacao_MSE_fit = funcao_objetivo_hiperparametros(X_treino,X_teste,y_treino,y_teste,semente_aleatoria,individuo,MSE_standard) #gera o fitness baseado no individuo
+        fitness_pop.append(populacao_MSE_fit) #armazena o fitness
+        
     return fitness_pop
