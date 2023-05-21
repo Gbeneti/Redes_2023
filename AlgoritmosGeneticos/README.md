@@ -34,7 +34,7 @@ Esta pasta contém os experimentos de algoritmos genéticos realizados em sala.
 
 + O arquivo "experimento GA.05 - palindromos" é um jupyter notebook que possui o código relativo a um experimento envolvendo palíndromos. É um dos experimentos do arquivo "Lista de experimentos - algoritmos geneticos", em que se quer encontrar 10 palíndromos a partir de 5 letras (com uma vogal), utilizando-se de algoritmos genéticos.
 
-+ O arquivo "experimento GA.08 - hp tuning" é um jupyter notebook que possui o código relativo a um experimento envolvendo machine learning. É um dos experimentos do arquivo "Lista de experimentos - algoritmos geneticos", em que se quer encontrar um bom conjunto de hiperparâmetros. Escolheu-se "árvores de decisão" como algoritmo para otimização. O código ainda não está completo.
++ O arquivo "experimento GA.08 - hp tuning" é um jupyter notebook que possui o código relativo a um experimento envolvendo machine learning. É um dos experimentos do arquivo "Lista de experimentos - algoritmos geneticos", em que se quer encontrar um bom conjunto de hiperparâmetros. Escolheu-se "árvores de decisão" como algoritmo para otimização, uma vez que em comparação com "floresta aleaória", tem menor demanda computacional.
 
 
 Para maiores detalhes consultar os notebooks.
